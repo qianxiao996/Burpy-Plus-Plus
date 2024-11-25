@@ -10,7 +10,17 @@
 
 4、增加多个开关。
 
-![image-20241125113641984](attachment/image-20241125113641984.png)
+![image-20241125113641984](intro-assets/image-20241125113641984.png)
+
+## Match、Replace、Set Var
+
+当Type为Replace、Regex时，执行普通的替换和正则替换，
+
+当 Type为Set  Var时，进行变量设置VarName=Match值。
+
+当Type为Regex Set  Var时，将Match中填写正则表达式。程序将正则匹配的值作为Var  Name的值。 VarName为变量名称。
+
+最终将存储在Burpy类中的self.global_var字典中，脚本中直接调用即可。
 
 # Burpy
 

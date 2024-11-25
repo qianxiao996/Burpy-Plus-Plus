@@ -99,6 +99,10 @@ class BurpyServicePyro:
     def get_methods(self):
         return self.method_list
 
+
+    def set_var(self,var_dicts):
+       self.burpy.global_var=var_dicts
+       return True
     def invoke_method(self, method_name, data):
         func = getattr(self.burpy, method_name)
         if data is None:

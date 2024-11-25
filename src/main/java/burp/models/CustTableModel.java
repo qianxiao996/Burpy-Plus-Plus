@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CustTableModel extends AbstractTableModel {
-    private final String[] columnNames ={"id","Item", "Match", "Replace","Type","Comment","Enabled"};
+    private final String[] columnNames ={"id","Item", "Match", "Replace/Var Name","Type","Comment","Enabled"};
     public static List<DataEntry> table_data = new ArrayList<>();//用于展现结果
 
     @Override

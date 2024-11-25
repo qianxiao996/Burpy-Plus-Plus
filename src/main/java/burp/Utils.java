@@ -96,6 +96,9 @@ public class Utils {
         JTextField match_text = new JTextField(data.match);
 
         JLabel replace = new JLabel("Replace:");
+        if(data.type.contains("Set Var")){
+            replace.setText("VarName");
+        }
         JTextArea replace_text = new JTextArea(data.replace);
         replace_text.setLineWrap(true); // 启用自动换行
         replace_text.setWrapStyleWord(true); // 在单词边界处换行
@@ -108,25 +111,34 @@ public class Utils {
         JTextField comment_text = new JTextField(data.comment);
 
         JLabel type = new JLabel("Type:");
-        JComboBox<String> type_combox = new JComboBox<>(new String[]{"Replace", "Regex"});
-        if (Objects.equals(data.type, "Regex")) {
-            type_combox.setSelectedItem(true);
-        } else {
-            type_combox.setSelectedItem(false);
-        }
+        JComboBox<String> type_combox = new JComboBox<>(new String[]{"Replace", "Regex","Set Var","Regex Set Var"});
+        type_combox.setSelectedItem(data.type);
+        type_combox.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // 获取选中的项
+                String selectedValue = (String) type_combox.getSelectedItem();
+//                BurpExtender.printSuccessMessage(selectedValue);
+                if(Objects.equals(selectedValue, "Set Var") || Objects.equals(selectedValue, "Regex Set Var")){
+                    replace.setText("VarName");
+                }else {
+                    replace.setText("Replace:");
+                }
+            }
+        });
 
         jpanel_edit.add(Add_Component(gbl, enable, gbc, 0, 0, 1, 1, 0, 0));
         jpanel_edit.add(Add_Component(gbl, enable_text, gbc, 1, 0, 1, 1, 1, 0));
-        jpanel_edit.add(Add_Component(gbl, item, gbc, 0, 1, 1, 1, 0, 0));
-        jpanel_edit.add(Add_Component(gbl, item_text, gbc, 1, 1, 1, 1, 1, 0));
-        jpanel_edit.add(Add_Component(gbl, match, gbc, 0, 2, 1, 1, 0, 0));
-        jpanel_edit.add(Add_Component(gbl, match_text, gbc, 1, 2, 1, 1, 1, 0));
-        jpanel_edit.add(Add_Component(gbl, replace, gbc, 0, 3, 1, 1, 0, 0));
-        jpanel_edit.add(Add_Component(gbl, replace_scroll, gbc, 1, 3, 1, 1, 1, 1));
-        jpanel_edit.add(Add_Component(gbl, comment, gbc, 0, 4, 1, 1, 0, 0));
-        jpanel_edit.add(Add_Component(gbl, comment_text, gbc, 1, 4, 1, 1, 1, 0));
-        jpanel_edit.add(Add_Component(gbl, type, gbc, 0, 5, 1, 1, 0, 0));
-        jpanel_edit.add(Add_Component(gbl, type_combox, gbc, 1, 5, 1, 1, 1, 0));
+        jpanel_edit.add(Add_Component(gbl, type, gbc, 0, 1, 1, 1, 0, 0));
+        jpanel_edit.add(Add_Component(gbl, type_combox, gbc, 1, 1, 1, 1, 1, 0));
+        jpanel_edit.add(Add_Component(gbl, item, gbc, 0, 2, 1, 1, 0, 0));
+        jpanel_edit.add(Add_Component(gbl, item_text, gbc, 1, 2, 1, 1, 1, 0));
+        jpanel_edit.add(Add_Component(gbl, match, gbc, 0, 3, 1, 1, 0, 0));
+        jpanel_edit.add(Add_Component(gbl, match_text, gbc, 1, 3, 1, 1, 1, 1));
+        jpanel_edit.add(Add_Component(gbl, replace, gbc, 0, 4, 1, 1, 0, 0));
+        jpanel_edit.add(Add_Component(gbl, replace_scroll, gbc, 1, 4, 1, 1, 1, 0));
+        jpanel_edit.add(Add_Component(gbl, comment, gbc, 0, 5, 1, 1, 0, 0));
+        jpanel_edit.add(Add_Component(gbl, comment_text, gbc, 1, 5, 1, 1, 1, 0));
 
         JButton save = new JButton("Save");
         save.addActionListener(new ActionListener() {
@@ -199,9 +211,12 @@ public class Utils {
     public static String handleData(DataEntry data, String source_text) {
         if (Objects.equals(data.type, "Regex")) {
             return handleRegexData(data, source_text);
+        } else if (Objects.equals(data.type, "Set Var") || Objects.equals(data.type, "Regex Set Var")) {
+            return  handleSetVar(data,source_text);
         } else {
             return handleNonRegexData(data, source_text);
         }
+
     }
 
     public static String handleRegexData(DataEntry data, String sourceText) {
@@ -221,7 +236,38 @@ public class Utils {
         // 使用 String.replace 方法替换所有匹配的部分
         return sourceText.replace(data.match, data.replace);
     }
+    public static String handleSetVar(DataEntry data, String sourceText) {
+        try {
+            String value="";
+            if(Objects.equals(data.type, "Regex Set Var")){
+                try {
+                    // 尝试编译正则表达式
+                    Pattern pattern = Pattern.compile(data.match);
+                    Matcher matcher = pattern.matcher(sourceText);
+                    // 查找第一个匹配项
+                    if (matcher.find()) {
+                        value = matcher.group();
+                        BurpExtender.printDebugMessage("Regex Set Var:"+data.replace+"="+value);
+                    }
+                } catch (Exception e) {
+                    value = data.match;
+                }
+            }else{
+                value = data.match;
+            }
+            if(!Objects.equals(BurpExtender.Global_Var.get(data.replace), value) && BurpExtender.serverStarted){
+//                    BurpExtender.printSuccessMessage(BurpExtender.Global_Var.toString());
+                BurpExtender.setVar( data.replace,(String)value);
+            }else{
+                BurpExtender.printDebugMessage("Service not down not set var:" + data.replace+"="+value);
+            }
+        } catch (Exception e) {
+            BurpExtender.printException(e, "Error processing regex");
+            return sourceText; // 返回原始文本，防止因错误导致数据丢失
+        }
+        return  sourceText;
 
+    }
 //    public static String encodeHtml(String input) {
 //        return input.replace("&", "&amp;")
 //                .replace("<", "&lt;")
