@@ -89,7 +89,6 @@ public class CustTableModel extends AbstractTableModel {
         }
         table_data.remove(rowIndex);
         fireTableDataChanged();
-
     }
     public List<DataEntry> getAllValue(){
         return  table_data;

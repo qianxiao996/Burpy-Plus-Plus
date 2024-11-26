@@ -237,6 +237,7 @@ public class Utils {
         return sourceText.replace(data.match, data.replace);
     }
     public static String handleSetVar(DataEntry data, String sourceText) {
+        Boolean  is_set_vat = true;
         try {
             String value="";
             if(Objects.equals(data.type, "Regex Set Var")){
@@ -247,20 +248,25 @@ public class Utils {
                     // 查找第一个匹配项
                     if (matcher.find()) {
                         value = matcher.group();
-                        BurpExtender.printDebugMessage("Regex Set Var:"+data.replace+"="+value);
                     }
                 } catch (Exception e) {
-                    value = data.match;
+                    is_set_vat=false;
+                    value = "";
+
                 }
             }else{
                 value = data.match;
             }
-            if(!Objects.equals(BurpExtender.Global_Var.get(data.replace), value) && BurpExtender.serverStarted){
-//                    BurpExtender.printSuccessMessage(BurpExtender.Global_Var.toString());
-                BurpExtender.setVar( data.replace,(String)value);
+            if(is_set_vat&&!BurpExtender.lock_var){
+                if(!Objects.equals(BurpExtender.Global_Var.get(data.replace), value) && BurpExtender.serverStarted){
+                    BurpExtender.setVar( data.replace,(String)value);
+                }else{
+                    BurpExtender.printDebugMessage("Service not down not set var:" + data.replace+"="+value);
+                }
             }else{
-                BurpExtender.printDebugMessage("Service not down not set var:" + data.replace+"="+value);
+                BurpExtender.printDebugMessage("Variable is lock not set var:" + data.replace+"="+value);
             }
+
         } catch (Exception e) {
             BurpExtender.printException(e, "Error processing regex");
             return sourceText; // 返回原始文本，防止因错误导致数据丢失

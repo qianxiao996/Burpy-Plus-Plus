@@ -2,6 +2,7 @@ package burp;
 import burp.models.CustTableModel;
 import burp.models.DataEntry;
 import burp.ui.MessageDialog;
+import javafx.scene.control.Cell;
 import net.razorvine.pyro.PyroException;
 import net.razorvine.pyro.PyroProxy;
 import javax.swing.*;
@@ -22,118 +23,119 @@ import static burp.Utils.*;
 
 
 public class BurpExtender extends Component implements IBurpExtender, ITab, ActionListener, IContextMenuFactory, MouseListener, IExtensionStateListener, IIntruderPayloadProcessor,IHttpListener,IMessageEditorTabFactory {
-	private final String ExtenderName = "Burpy++";
-	private final String ExtenderVersion="v4.2";
-	public  static final Map<String,String> Global_Var = new HashMap<>();
+    public static Boolean lock_var=false;
+    private final String ExtenderName = "Burpy++";
+    private final String ExtenderVersion="v4.3";
+    public  static final Map<String,String> Global_Var = new HashMap<>();
     private static IBurpExtenderCallbacks callbacks;
-	private IExtensionHelpers helpers;
+    private IExtensionHelpers helpers;
 
-	public static CustTableModel table_model = new CustTableModel();
-	private static PrintWriter stdout;
-	private static PrintWriter stderr;
+    public static CustTableModel table_model = new CustTableModel();
+    private static PrintWriter stdout;
+    private static PrintWriter stderr;
 
-	private JPanel mainPanel;
-	public static PyroProxy pyroBurpyService;
-	private Process pyroServerProcess;
+    private JPanel mainPanel;
+    public static PyroProxy pyroBurpyService;
+    private Process pyroServerProcess;
 
-	private static JTextField pythonPath;
-	private String pythonScript;
-	private static JTextField pyroHost;
-	private static JTextField pyroPort;
-	private JTextPane serverStatus;
+    private static JTextField pythonPath;
+    private String pythonScript;
+    private static JTextField pyroHost;
+    private static JTextField pyroPort;
+    private JTextPane serverStatus;
 
-	private static JTextField burpyPath;
+    private static JTextField burpyPath;
 
-	private static JCheckBox chckbxPro;
-	private static JCheckBox chckbxAuto;
+    private static JCheckBox chckbxPro;
+    private static JCheckBox chckbxAuto;
 
-	private static JCheckBox proxy_chckbxAuto;
+    private static JCheckBox proxy_chckbxAuto;
 
-	public Boolean should_pro = false;
-	public Boolean should_auto = false;
-	public Boolean proxy_should_auto =false;
+    public Boolean should_pro = false;
+    public Boolean should_auto = false;
+    public Boolean proxy_should_auto =false;
 
-	private Style redStyle;
-	private Style greenStyle;
-	DefaultStyledDocument documentServerStatus;
+    private Style redStyle;
+    private Style greenStyle;
+    DefaultStyledDocument documentServerStatus;
 
-	public static boolean serverStarted=false;
-	private IContextMenuInvocation currentInvocation;
+    public static boolean serverStarted=false;
+    private IContextMenuInvocation currentInvocation;
 
-	private JButton clearConsoleButton;
-	private JButton reloadScript;
+    private JButton clearConsoleButton;
+    private JButton reloadScript;
 
-	private static JEditorPane pluginConsoleTextArea;
+    private static JEditorPane pluginConsoleTextArea;
 
-	private Thread stdoutThread;
-	private Thread stderrThread;
+    private Thread stdoutThread;
+    private Thread stderrThread;
 
-	private Boolean thread_stout_flag;
-	private Boolean thread_error_flag;
+    private Boolean thread_stout_flag;
+    private Boolean thread_error_flag;
 
-	private static boolean lastPrintIsJS=false;
-	public List<String> burpyMethods;
-	public String serviceHost;
-	public int servicePort;
-	public String serviceObj="BurpyServicePyro";
+    private static boolean lastPrintIsJS=false;
+    public List<String> burpyMethods;
+    public String serviceHost;
+    public int servicePort;
+    public String serviceObj="BurpyServicePyro";
 
-	private Boolean is_match_replace=false;
-	private Boolean is_match_replace_repeater=false;
-	private Boolean is_match_replace_proxy=false;
-	private Boolean is_match_replace_other=false;
-	private static Boolean is_debug=false;
-	private List<String> whitelist=new ArrayList<>();
+    private Boolean is_match_replace=false;
+    private Boolean is_match_replace_repeater=false;
+    private Boolean is_match_replace_proxy=false;
+    private Boolean is_match_replace_other=false;
+    private static Boolean is_debug=false;
+    private List<String> whitelist=new ArrayList<>();
 
-	private static JCheckBox checkbox_enable_match_repalce;
-	private static JCheckBox checkbox_enable_match_repalce_proxy;
-	private static JCheckBox checkbox_enable_match_repalce_repeater;
-	private static JCheckBox checkbox_enable_match_repalce_EXTENDER;
-	private static JTextField white_host;
-
-
-	@Override
-	public void registerExtenderCallbacks(IBurpExtenderCallbacks c) {
-
-		// Keep a reference to our callbacks object
-		callbacks = c;
-
-		// Obtain an extension helpers object
-		helpers = callbacks.getHelpers();
-
-		// Set our extension name
-		callbacks.setExtensionName(ExtenderName+" "+ExtenderVersion);
-
-		// register ourselves as an Intruder payload processor
-		callbacks.registerIntruderPayloadProcessor(this);
+    private static JCheckBox checkbox_enable_match_repalce;
+    private static JCheckBox checkbox_enable_match_repalce_proxy;
+    private static JCheckBox checkbox_enable_match_repalce_repeater;
+    private static JCheckBox checkbox_enable_match_repalce_EXTENDER;
+    private static JTextField white_host;
 
 
-		//register to produce options for the context menu
-		callbacks.registerContextMenuFactory(this);
+    @Override
+    public void registerExtenderCallbacks(IBurpExtenderCallbacks c) {
 
-		// register to execute actions on unload
-		callbacks.registerExtensionStateListener(this);
+        // Keep a reference to our callbacks object
+        callbacks = c;
 
-		// register editor tab
-		callbacks.registerMessageEditorTabFactory(this);
+        // Obtain an extension helpers object
+        helpers = callbacks.getHelpers();
 
-		// Initialize stdout and stderr
-		stdout = new PrintWriter(callbacks.getStdout(), true);
-		stderr = new PrintWriter(callbacks.getStderr(), true);
-		stdout.println("Welcome to Burpy++");
-		stdout.println("Github: https://github.com/qianxiao996/Burpy-Plus-Plus");
-		stdout.println("");
-		try {
-			InputStream inputStream = getClass().getClassLoader().getResourceAsStream("res/burpyServicePyro.py");
+        // Set our extension name
+        callbacks.setExtensionName(ExtenderName+" "+ExtenderVersion);
+
+        // register ourselves as an Intruder payload processor
+        callbacks.registerIntruderPayloadProcessor(this);
+
+
+        //register to produce options for the context menu
+        callbacks.registerContextMenuFactory(this);
+
+        // register to execute actions on unload
+        callbacks.registerExtensionStateListener(this);
+
+        // register editor tab
+        callbacks.registerMessageEditorTabFactory(this);
+
+        // Initialize stdout and stderr
+        stdout = new PrintWriter(callbacks.getStdout(), true);
+        stderr = new PrintWriter(callbacks.getStderr(), true);
+        stdout.println("Welcome to Burpy++");
+        stdout.println("Github: https://github.com/qianxiao996/Burpy-Plus-Plus");
+        stdout.println("");
+        try {
+            InputStream inputStream = getClass().getClassLoader().getResourceAsStream("res/burpyServicePyro.py");
             BufferedReader reader = null;
             if (inputStream != null) {
                 reader = new BufferedReader(new InputStreamReader(inputStream ));
             }
             File outputFile = new File(System.getProperty("java.io.tmpdir") + FileSystems.getDefault().getSeparator() + "burpyServicePyro.py");
 
-			FileWriter fr = new FileWriter(outputFile);
-			BufferedWriter br  = new BufferedWriter(fr);
+            FileWriter fr = new FileWriter(outputFile);
+            BufferedWriter br  = new BufferedWriter(fr);
 
-			String s;
+            String s;
             if (reader != null) {
                 while ((s = reader.readLine())!=null) {
 
@@ -147,13 +149,13 @@ public class BurpExtender extends Component implements IBurpExtender, ITab, Acti
             }
             br.close();
 
-			pythonScript = outputFile.getAbsolutePath();
+            pythonScript = outputFile.getAbsolutePath();
 
-		} catch(Exception e) {
-			printException(e,"Error copying Pyro Server file");
-		}
+        } catch(Exception e) {
+            printException(e,"Error copying Pyro Server file");
+        }
 
-		SwingUtilities.invokeLater(() -> {
+        SwingUtilities.invokeLater(() -> {
 
             JTabbedPane tabbedPanel = new JTabbedPane();
             JTable table = new JTable(table_model);
@@ -168,125 +170,130 @@ public class BurpExtender extends Component implements IBurpExtender, ITab, Acti
             JScrollPane scrollPane = new JScrollPane(table);
             JButton match_add = new JButton("Add");
             match_add.addActionListener(e -> {
-			DataEntry data = new DataEntry(-1,"", "", "", "", "",true);
-			Utils.edit(data);
-			savePersistentSettings();
-			});
-						JButton match_edit = new JButton("Edit");
-						match_edit.addActionListener(e -> {
+                DataEntry data = new DataEntry(-1,"", "", "", "", "",true);
+                Utils.edit(data);
+                savePersistentSettings();
+            });
+            JButton match_edit = new JButton("Edit");
+            match_edit.addActionListener(e -> {
 
-			int selectedRow = table.getSelectedRow();
-			if (!(selectedRow >= 0 && selectedRow < table_model.getRowCount())) {
-			JOptionPane.showMessageDialog(BurpExtender.this, "No row selected", "Error", JOptionPane.ERROR_MESSAGE);
-			return;
-			}
+                int selectedRow = table.getSelectedRow();
+                selectedRow =table.convertRowIndexToView(selectedRow);
+                if (!(selectedRow >= 0 && selectedRow < table_model.getRowCount())) {
+                    JOptionPane.showMessageDialog(BurpExtender.this, "No row selected", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
 
-			DataEntry data = table_model.getRowValueAt(selectedRow);
+                DataEntry data = table_model.getRowValueAt(selectedRow);
 
-			Utils.edit(data);
-			savePersistentSettings();
-			});
+                Utils.edit(data);
+                savePersistentSettings();
+            });
 
-						JButton match_remove = new JButton("Remove");
-						match_remove.addActionListener(e -> {
-			int selectedRow = table.getSelectedRow();
-			if(!(selectedRow >= 0 && selectedRow < table_model.getRowCount())){
-			JOptionPane.showMessageDialog(BurpExtender.this, "No row selected", "Error", JOptionPane.ERROR_MESSAGE);
-			return;
-			}
-			table_model.delValueAt(selectedRow);
-			savePersistentSettings();
-			});
-						JButton match_clear = new JButton("Clear");
-						match_clear.addActionListener(e -> table_model.ClearData());
-						JButton match_copy = new JButton("Copy");
-						match_copy.addActionListener(e -> {
-			int selectedRow = table.getSelectedRow();
-			if(!(selectedRow >= 0 && selectedRow < table_model.getRowCount())){
-			JOptionPane.showMessageDialog(BurpExtender.this, "No row selected", "Error", JOptionPane.ERROR_MESSAGE);
-			return;
-			}
-			DataEntry data = table_model.getRowValueAt(selectedRow);
-			List<DataEntry>  data_all = new ArrayList<>();
-			data_all.add(data);
-			String json_str = Utils.JsontoStr(data_all);
-			CopytoClipboard(json_str);
-			//						JOptionPane.showMessageDialog(BurpExtender.this, "Text copied to clipboard!", "Success", JOptionPane.INFORMATION_MESSAGE);
-			});
+            JButton match_remove = new JButton("Remove");
+            match_remove.addActionListener(e -> {
+                int[] selectedRow = table.getSelectedRows();
+                if(selectedRow.length>0){
+                    for (int i : selectedRow) {
+                        int selectedRowView = table.convertRowIndexToView(i);
+                        table_model.delValueAt(selectedRowView);
+                    }
+                    savePersistentSettings();
+                }else{
+                    JOptionPane.showMessageDialog(BurpExtender.this, "No row selected", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            });
+            JButton match_clear = new JButton("Clear");
+            match_clear.addActionListener(e -> table_model.ClearData());
+            JButton match_copy = new JButton("Copy");
+            match_copy.addActionListener(e -> {
+                int selectedRow = table.getSelectedRow();
+                selectedRow =table.convertRowIndexToView(selectedRow);
+                if(!(selectedRow >= 0 && selectedRow < table_model.getRowCount())){
+                    JOptionPane.showMessageDialog(BurpExtender.this, "No row selected", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                DataEntry data = table_model.getRowValueAt(selectedRow);
+                List<DataEntry>  data_all = new ArrayList<>();
+                data_all.add(data);
+                String json_str = Utils.JsontoStr(data_all);
+                CopytoClipboard(json_str);
+                //						JOptionPane.showMessageDialog(BurpExtender.this, "Text copied to clipboard!", "Success", JOptionPane.INFORMATION_MESSAGE);
+            });
             JButton match_paste = new JButton("Paste");
             match_paste.addActionListener(e -> {
-			// 获取系统剪切板
-			Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
-			// 尝试从剪切板中获取文本
-			Transferable contents = clipboard.getContents(null);
-			try {
-			if (contents != null && contents.isDataFlavorSupported(DataFlavor.stringFlavor)) {
-			String text = (String) contents.getTransferData(DataFlavor.stringFlavor);
-			List<DataEntry> all_data = StrtoJson(text);
-			if(all_data==null || all_data.isEmpty()){
-			JOptionPane.showMessageDialog(BurpExtender.this, "Invalid JSON data in clipboard", "Error", JOptionPane.ERROR_MESSAGE);
-			return;
-			}
-			table_model.ImportData(all_data,false);
-			savePersistentSettings();
-			} else {
-			JOptionPane.showMessageDialog(BurpExtender.this, "Clipboard does not contain text", "Error", JOptionPane.ERROR_MESSAGE);
-			}
-			} catch (UnsupportedFlavorException | IOException ex) {
-			printException(ex, "Error pasting from clipboard");
-			JOptionPane.showMessageDialog(BurpExtender.this, "Error reading from clipboard: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-			}
-			});
+                // 获取系统剪切板
+                Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+                // 尝试从剪切板中获取文本
+                Transferable contents = clipboard.getContents(null);
+                try {
+                    if (contents != null && contents.isDataFlavorSupported(DataFlavor.stringFlavor)) {
+                        String text = (String) contents.getTransferData(DataFlavor.stringFlavor);
+                        List<DataEntry> all_data = StrtoJson(text);
+                        if(all_data==null || all_data.isEmpty()){
+                            JOptionPane.showMessageDialog(BurpExtender.this, "Invalid JSON data in clipboard", "Error", JOptionPane.ERROR_MESSAGE);
+                            return;
+                        }
+                        table_model.ImportData(all_data,false);
+                        savePersistentSettings();
+                    } else {
+                        JOptionPane.showMessageDialog(BurpExtender.this, "Clipboard does not contain text", "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                } catch (UnsupportedFlavorException | IOException ex) {
+                    printException(ex, "Error pasting from clipboard");
+                    JOptionPane.showMessageDialog(BurpExtender.this, "Error reading from clipboard: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            });
             JButton match_import = new JButton("Import");
             match_import.addActionListener(e -> {
-			JFileChooser chooser = new JFileChooser();
-			// 创建一个文件过滤器，仅显示 .txt 文件
-			FileNameExtensionFilter pyFileFilter = new FileNameExtensionFilter("Json files", "json");
-			chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);//设置只能选择目录
-			chooser.addChoosableFileFilter(pyFileFilter);
-			int returnVal = chooser.showOpenDialog(BurpExtender.this);
-			if(returnVal == JFileChooser.APPROVE_OPTION) {
-			String selectPath =chooser.getSelectedFile().getPath() ;
-			String text = Utils.readFile(selectPath);
-			List<DataEntry> all_data = StrtoJson(text);
-			if(all_data==null || all_data.isEmpty()){
-			JOptionPane.showMessageDialog(BurpExtender.this, "Invalid JSON data in clipboard", "Error", JOptionPane.ERROR_MESSAGE);
-			return;
-			}
-			table_model.ImportData(all_data,true);
-			chooser.setVisible(false);
-			savePersistentSettings();
-			}
-			});
+                JFileChooser chooser = new JFileChooser();
+                // 创建一个文件过滤器，仅显示 .txt 文件
+                FileNameExtensionFilter pyFileFilter = new FileNameExtensionFilter("Json files", "json");
+                chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);//设置只能选择目录
+                chooser.addChoosableFileFilter(pyFileFilter);
+                int returnVal = chooser.showOpenDialog(BurpExtender.this);
+                if(returnVal == JFileChooser.APPROVE_OPTION) {
+                    String selectPath =chooser.getSelectedFile().getPath() ;
+                    String text = Utils.readFile(selectPath);
+                    List<DataEntry> all_data = StrtoJson(text);
+                    if(all_data==null || all_data.isEmpty()){
+                        JOptionPane.showMessageDialog(BurpExtender.this, "Invalid JSON data in clipboard", "Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                    table_model.ImportData(all_data,true);
+                    chooser.setVisible(false);
+                    savePersistentSettings();
+                }
+            });
             JButton match_export = new JButton("Export");
             match_export.addActionListener(e -> {
-			JFileChooser chooser = new JFileChooser();
-			chooser.setCurrentDirectory(new File(System.getProperty("user.home")));
-			// 创建一个文件过滤器，仅显示 .txt 文件
-			FileNameExtensionFilter pyFileFilter = new FileNameExtensionFilter("Json files", "json");
-			chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);//设置只能选择目录
-			chooser.addChoosableFileFilter(pyFileFilter);
+                JFileChooser chooser = new JFileChooser();
+                chooser.setCurrentDirectory(new File(System.getProperty("user.home")));
+                // 创建一个文件过滤器，仅显示 .txt 文件
+                FileNameExtensionFilter pyFileFilter = new FileNameExtensionFilter("Json files", "json");
+                chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);//设置只能选择目录
+                chooser.addChoosableFileFilter(pyFileFilter);
 
-			// 显示保存文件对话框
-			int result = chooser.showSaveDialog(BurpExtender.this);
+                // 显示保存文件对话框
+                int result = chooser.showSaveDialog(BurpExtender.this);
 
-			// 检查用户是否点击了“保存”按钮
-			if (result == JFileChooser.APPROVE_OPTION) {
-			// 获取用户选择的文件
-			File file = chooser.getSelectedFile();
-			String contentToSave = Utils.JsontoStr(table_model.getAllValue());
+                // 检查用户是否点击了“保存”按钮
+                if (result == JFileChooser.APPROVE_OPTION) {
+                    // 获取用户选择的文件
+                    File file = chooser.getSelectedFile();
+                    String contentToSave = Utils.JsontoStr(table_model.getAllValue());
 
-			// 将内容写入文件
-			try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
-			writer.write(contentToSave);
-			CopytoClipboard(contentToSave);
-			JOptionPane.showMessageDialog(BurpExtender.this, "File saved successfully: " + file.getAbsolutePath(), "Success", JOptionPane.INFORMATION_MESSAGE);
-			} catch (IOException ex) {
-			printException(ex, "Error writing to file");
-			}
-			chooser.setVisible(false);
-			}
-			});
+                    // 将内容写入文件
+                    try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
+                        writer.write(contentToSave);
+                        CopytoClipboard(contentToSave);
+                        JOptionPane.showMessageDialog(BurpExtender.this, "File saved successfully: " + file.getAbsolutePath(), "Success", JOptionPane.INFORMATION_MESSAGE);
+                    } catch (IOException ex) {
+                        printException(ex, "Error writing to file");
+                    }
+                    chooser.setVisible(false);
+                }
+            });
 
             JPanel matchPanel = new JPanel();
             GridBagLayout gbl=new GridBagLayout();//创建网格包布局管理器
@@ -311,7 +318,7 @@ public class BurpExtender extends Component implements IBurpExtender, ITab, Acti
             });
 
             checkbox_enable_match_repalce_proxy = new JCheckBox("Enable Proxy");
-			checkbox_enable_match_repalce_proxy.setSelected(callbacks.loadExtensionSetting("match_replace_enable_proxy") != null && Objects.equals(callbacks.loadExtensionSetting("match_replace_enable_proxy"), "1"));
+            checkbox_enable_match_repalce_proxy.setSelected(callbacks.loadExtensionSetting("match_replace_enable_proxy") != null && Objects.equals(callbacks.loadExtensionSetting("match_replace_enable_proxy"), "1"));
             is_match_replace_proxy = callbacks.loadExtensionSetting("match_replace_enable_proxy") != null && Objects.equals(callbacks.loadExtensionSetting("match_replace_enable_proxy"), "1");
             checkbox_enable_match_repalce_proxy.addActionListener(e -> {
                 is_match_replace_proxy = checkbox_enable_match_repalce_proxy.isSelected();
@@ -338,10 +345,13 @@ public class BurpExtender extends Component implements IBurpExtender, ITab, Acti
             jcheckbox_debug.setSelected(callbacks.loadExtensionSetting("is_debug") != null && Objects.equals(callbacks.loadExtensionSetting("is_debug"), "1"));
             is_debug = callbacks.loadExtensionSetting("is_debug") != null && Objects.equals(callbacks.loadExtensionSetting("is_debug"), "1");
             jcheckbox_debug.addActionListener(e -> {
-			is_debug = jcheckbox_debug.isSelected();
-			savePersistentSettings();
-			});
-
+                is_debug = jcheckbox_debug.isSelected();
+                savePersistentSettings();
+            });
+            JCheckBox lock_var_label = new JCheckBox("Lock Variable");
+            lock_var_label.setSelected(callbacks.loadExtensionSetting("lock_var") != null && Objects.equals(callbacks.loadExtensionSetting("lock_var"), "1"));
+            lock_var =(callbacks.loadExtensionSetting("lock_var") != null && Objects.equals(callbacks.loadExtensionSetting("lock_var"), "1"));
+            lock_var_label.addActionListener(e -> lock_var = lock_var_label.isSelected());
             JLabel white_label = new JLabel("White List:");
             white_host =  new JTextField();
             if(callbacks.loadExtensionSetting("whiteList") != null) {
@@ -390,18 +400,20 @@ public class BurpExtender extends Component implements IBurpExtender, ITab, Acti
             tools_enable.add(Box.createHorizontalStrut(10)); // 10像素的间距
             tools_enable.add(jcheckbox_debug);
             tools_enable.add(Box.createHorizontalStrut(10)); // 10像素的间距
+            tools_enable.add(lock_var_label);
+            tools_enable.add(Box.createHorizontalStrut(10)); // 10像素的间距
             tools_enable.add(white_label);
             tools_enable.add(Box.createHorizontalStrut(5)); // 10像素的间距
             tools_enable.add(white_host);
 
             JButton clear_white_list = new JButton("Clear");
             clear_white_list.addActionListener(e -> {
-			white_host.setText("*");
-			whitelist = new ArrayList<>();
-			whitelist.add("*");
-			savePersistentSettings();
+                white_host.setText("*");
+                whitelist = new ArrayList<>();
+                whitelist.add("*");
+                savePersistentSettings();
 
-			});
+            });
 
             //第一行
             matchPanel.add(Utils.Add_Component(gbl,title,gbc_match,0,0,1,1,0,0));
@@ -494,10 +506,10 @@ public class BurpExtender extends Component implements IBurpExtender, ITab, Acti
             should_pro = (callbacks.loadExtensionSetting("enableProcessor") != null && Objects.equals(callbacks.loadExtensionSetting("enableProcessor"), "1"));
 
             chckbxPro.addActionListener(e -> {
-			should_pro = chckbxPro.isSelected();
-			savePersistentSettings();
+                should_pro = chckbxPro.isSelected();
+                savePersistentSettings();
 
-			});
+            });
 
             chckbxAuto = new JCheckBox("Enable Auto Enc/Dec (require encrypt and decrypt function)");
             chckbxAuto.setSelected(callbacks.loadExtensionSetting("enableAuto") != null && Objects.equals(callbacks.loadExtensionSetting("enableAuto"), "1"));
@@ -505,16 +517,16 @@ public class BurpExtender extends Component implements IBurpExtender, ITab, Acti
 
             chckbxAuto.setEnabled(true);
             chckbxAuto.addActionListener(actionEvent -> {
-			should_auto = chckbxAuto.isSelected();
-			savePersistentSettings();
+                should_auto = chckbxAuto.isSelected();
+                savePersistentSettings();
 
-			});
+            });
             proxy_chckbxAuto = new JCheckBox("Enable Proxy Auto Enc/Dec (require encrypt and decrypt function)");
             proxy_chckbxAuto.setSelected(callbacks.loadExtensionSetting("enableAutoProxy") != null && Objects.equals(callbacks.loadExtensionSetting("enableAutoProxy"), "1"));
             proxy_should_auto = (callbacks.loadExtensionSetting("enableAutoProxy") != null && Objects.equals(callbacks.loadExtensionSetting("enableAutoProxy"), "1"));
             proxy_chckbxAuto.setEnabled(true);
             proxy_chckbxAuto.addActionListener(actionEvent -> {
-            proxy_should_auto = proxy_chckbxAuto.isSelected();
+                proxy_should_auto = proxy_chckbxAuto.isSelected();
                 savePersistentSettings();
 
             });
@@ -606,116 +618,116 @@ public class BurpExtender extends Component implements IBurpExtender, ITab, Acti
             callbacks.customizeUiComponent(mainPanel);
             callbacks.addSuiteTab(BurpExtender.this);
         });
-		callbacks.registerHttpListener(this);
-	}
+        callbacks.registerHttpListener(this);
+    }
 
-	@SuppressWarnings("unchecked")
-	public void getMethods() {
-			try {
+    @SuppressWarnings("unchecked")
+    public void getMethods() {
+        try {
 //				service = new PyroProxy(serviceHost, servicePort, serviceObj);
-				this.burpyMethods = (List<String>) (pyroBurpyService.call("get_methods"));
+            this.burpyMethods = (List<String>) (pyroBurpyService.call("get_methods"));
 //				printSuccessMessage(this.burpyMethods.toString());
 //				stdout.println(pyroBurpyService.pyroMethods);
-			} catch (Exception e) {
-				stderr.println(e);
-				StackTraceElement[] exceptionElements = e.getStackTrace();
-                for (StackTraceElement exceptionElement : exceptionElements) {
-                    stderr.println(exceptionElement.toString());
-                }
-			}finally {
-				if (this.burpyMethods != null) {
-					printSuccessMessage("methods loaded");
-				}else{
-					stdout.println("Methods loading failed");
-				}
-			}
-
-	}
-
-//	@SuppressWarnings("unchecked")
-	public static void setVar(String name,String value) {
-		try {
-//				service = new PyroProxy(serviceHost, servicePort, serviceObj);
-			Global_Var.put(name,value);
-			Boolean is_success  = (Boolean) pyroBurpyService.call("set_var",Global_Var);
-			if (is_success) {
-				printSuccessMessage("set var "+name+"="+value+" success");
-			}else{
-				printException(null,"set var "+name+"="+value+" failed");
-			}
-		} catch (Exception e) {
-			stderr.println(e);
-			StackTraceElement[] exceptionElements = e.getStackTrace();
-			for (StackTraceElement exceptionElement : exceptionElements) {
-				stderr.println(exceptionElement.toString());
-			}
-		}
+        } catch (Exception e) {
+            stderr.println(e);
+            StackTraceElement[] exceptionElements = e.getStackTrace();
+            for (StackTraceElement exceptionElement : exceptionElements) {
+                stderr.println(exceptionElement.toString());
+            }
+        }finally {
+            if (this.burpyMethods != null) {
+                printSuccessMessage("methods loaded");
+            }else{
+                stdout.println("Methods loading failed");
+            }
+        }
 
     }
 
-	private void launchPyroServer(String pythonPath, String pyroServicePath) {
-
-		Runtime rt = Runtime.getRuntime();
-
-		serviceHost = pyroHost.getText().trim();
-		servicePort = Integer.parseInt(pyroPort.getText().trim());
-
-		String[] startServerCommand = {pythonPath,"-i",pyroServicePath,serviceHost,Integer.toString(servicePort),burpyPath.getText().trim()};
-
-
-		try {
-//			documentServerStatus.insertString(0, "starting up... ", redStyle);
-			pyroServerProcess = rt.exec(startServerCommand);
-			final BufferedReader stdOutput = new BufferedReader(new InputStreamReader(pyroServerProcess.getInputStream()));
-			final BufferedReader stdError = new BufferedReader(new InputStreamReader(pyroServerProcess.getErrorStream()));
-			// Initialize thread that will read stdout
-			stdoutThread = new Thread(() -> {
-            while(thread_stout_flag && !Thread.currentThread().isInterrupted()) {
-                try {
-                    final String line = stdOutput.readLine();
-                    // Only used to handle Pyro first message (when server start)
-//							if(line.equals("Ready.")) {
-                    if(line.contains("running") || line.startsWith("Ready.")) {
-                        pyroBurpyService = new PyroProxy(serviceHost,servicePort,serviceObj);
-                        serverStarted = true;
-                        SwingUtilities.invokeLater(() -> {
-                            serverStatus.setText("");
-                            try {
-                                documentServerStatus.insertString(0, "running", greenStyle);
-//											documentServerStatusButtons.insertString(0, "Server running", greenStyle);
-                            } catch (BadLocationException e) {
-
-                                printException(e,"Exception setting labels");
-                            }
-
-                        });
-
-                        printSuccessMessage("Pyro server started correctly");
-                        printSuccessMessage("Better use \"Kill Server\" after finished!");
-                        printSuccessMessage("Analyzing scripts");
-                        getMethods();
-                        if(!Global_Var.isEmpty()){
-                            Boolean is_success  = (Boolean) pyroBurpyService.call("set_var",Global_Var);
-                            if (is_success) {
-                                printSuccessMessage("set var success:"+Global_Var);
-                            }else{
-                                printException(null,"set var failed");
-                            }
-                        }
-                        // Standard line
-                    } else {
-                        printJSMessage(line);
-                    }
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
+    //	@SuppressWarnings("unchecked")
+    public static void setVar(String name,String value) {
+        try {
+//				service = new PyroProxy(serviceHost, servicePort, serviceObj);
+            Global_Var.put(name,value);
+            Boolean is_success  = (Boolean) pyroBurpyService.call("set_var",Global_Var);
+            if (is_success) {
+                printSuccessMessage("set var "+name+"="+value+" success");
+            }else{
+                printException(null,"set var "+name+"="+value+" failed");
             }
+        } catch (Exception e) {
+            stderr.println(e);
+            StackTraceElement[] exceptionElements = e.getStackTrace();
+            for (StackTraceElement exceptionElement : exceptionElements) {
+                stderr.println(exceptionElement.toString());
+            }
+        }
+
+    }
+
+    private void launchPyroServer(String pythonPath, String pyroServicePath) {
+
+        Runtime rt = Runtime.getRuntime();
+
+        serviceHost = pyroHost.getText().trim();
+        servicePort = Integer.parseInt(pyroPort.getText().trim());
+
+        String[] startServerCommand = {pythonPath,"-i",pyroServicePath,serviceHost,Integer.toString(servicePort),burpyPath.getText().trim()};
+
+
+        try {
+//			documentServerStatus.insertString(0, "starting up... ", redStyle);
+            pyroServerProcess = rt.exec(startServerCommand);
+            final BufferedReader stdOutput = new BufferedReader(new InputStreamReader(pyroServerProcess.getInputStream()));
+            final BufferedReader stdError = new BufferedReader(new InputStreamReader(pyroServerProcess.getErrorStream()));
+            // Initialize thread that will read stdout
+            stdoutThread = new Thread(() -> {
+                while(thread_stout_flag && !Thread.currentThread().isInterrupted()) {
+                    try {
+                        final String line = stdOutput.readLine();
+                        // Only used to handle Pyro first message (when server start)
+//							if(line.equals("Ready.")) {
+                        if(line.contains("running") || line.startsWith("Ready.")) {
+                            pyroBurpyService = new PyroProxy(serviceHost,servicePort,serviceObj);
+                            serverStarted = true;
+                            SwingUtilities.invokeLater(() -> {
+                                serverStatus.setText("");
+                                try {
+                                    documentServerStatus.insertString(0, "running", greenStyle);
+//											documentServerStatusButtons.insertString(0, "Server running", greenStyle);
+                                } catch (BadLocationException e) {
+
+                                    printException(e,"Exception setting labels");
+                                }
+
+                            });
+
+                            printSuccessMessage("Pyro server started correctly");
+                            printSuccessMessage("Better use \"Kill Server\" after finished!");
+                            printSuccessMessage("Analyzing scripts");
+                            getMethods();
+                            if(!Global_Var.isEmpty()){
+                                Boolean is_success  = (Boolean) pyroBurpyService.call("set_var",Global_Var);
+                                if (is_success) {
+                                    printSuccessMessage("set var success:"+Global_Var);
+                                }else{
+                                    printException(null,"set var failed");
+                                }
+                            }
+                            // Standard line
+                        } else {
+                            printJSMessage(line);
+                        }
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
             });
-			thread_error_flag=true;
-			thread_stout_flag=true;
-			stdoutThread.start();
-			// Initialize thread that will read stderr
-			stderrThread = new Thread(() -> {
+            thread_error_flag=true;
+            thread_stout_flag=true;
+            stdoutThread.start();
+            // Initialize thread that will read stderr
+            stderrThread = new Thread(() -> {
                 while(thread_error_flag && !Thread.currentThread().isInterrupted()) {
                     try {
 
@@ -728,195 +740,198 @@ public class BurpExtender extends Component implements IBurpExtender, ITab, Acti
                     }
                 }
             });
-			stderrThread.start();
+            stderrThread.start();
 
-		} catch (final Exception e1) {
+        } catch (final Exception e1) {
 
-			printException(e1,"Exception starting Pyro server");
+            printException(e1,"Exception starting Pyro server");
 
-		}
-	}
+        }
+    }
 
-	@Override
-	public String getTabCaption() {
+    @Override
+    public String getTabCaption() {
 
-		return ExtenderName;
-	}
-	@Override
-	public Component getUiComponent() {
-		return mainPanel;
-	}
-	static void savePersistentSettings() {
-		try{
-			callbacks.saveExtensionSetting("match_replace_enable", checkbox_enable_match_repalce.isSelected() ?"1":"0");
-			callbacks.saveExtensionSetting("match_replace_enable_proxy",checkbox_enable_match_repalce_proxy.isSelected() ?"1":"0");
-			callbacks.saveExtensionSetting("match_replace_enable_repeater",checkbox_enable_match_repalce_repeater.isSelected() ?"1":"0");
-			callbacks.saveExtensionSetting("match_replace_enable_extender",checkbox_enable_match_repalce_EXTENDER.isSelected() ?"1":"0");
-			callbacks.saveExtensionSetting("is_debug",is_debug ?"1":"0");
-			callbacks.saveExtensionSetting("whiteList",white_host.getText());
-
-			callbacks.saveExtensionSetting("pythonPath",pythonPath.getText().trim());
-			callbacks.saveExtensionSetting("pyroHost",pyroHost.getText().trim());
-			callbacks.saveExtensionSetting("pyroPort",pyroPort.getText().trim());
-			callbacks.saveExtensionSetting("burpyPath",burpyPath.getText().trim());
-
-			callbacks.saveExtensionSetting("enableProcessor",chckbxPro.isSelected()?"1":"0");
-			callbacks.saveExtensionSetting("enableAuto",chckbxAuto.isSelected()?"1":"0");
-			callbacks.saveExtensionSetting("enableAutoProxy",proxy_chckbxAuto.isSelected()?"1":"0");
-			List<DataEntry> all_data = table_model.getAllValue();
-			callbacks.saveExtensionSetting("matchReplaceTable",JsontoStr(all_data));
-		}catch (Exception e){
-			printException(e,"Exception saving settings");
-		}
-	}
+        return ExtenderName;
+    }
+    @Override
+    public Component getUiComponent() {
+        return mainPanel;
+    }
+    static void savePersistentSettings() {
+        try{
+            callbacks.saveExtensionSetting("match_replace_enable", checkbox_enable_match_repalce.isSelected() ?"1":"0");
+            callbacks.saveExtensionSetting("match_replace_enable_proxy",checkbox_enable_match_repalce_proxy.isSelected() ?"1":"0");
+            callbacks.saveExtensionSetting("match_replace_enable_repeater",checkbox_enable_match_repalce_repeater.isSelected() ?"1":"0");
+            callbacks.saveExtensionSetting("match_replace_enable_extender",checkbox_enable_match_repalce_EXTENDER.isSelected() ?"1":"0");
+            callbacks.saveExtensionSetting("is_debug",is_debug ?"1":"0");
+            callbacks.saveExtensionSetting("lock_var",lock_var ?"1":"0");
 
 
+            callbacks.saveExtensionSetting("whiteList",white_host.getText());
+
+            callbacks.saveExtensionSetting("pythonPath",pythonPath.getText().trim());
+            callbacks.saveExtensionSetting("pyroHost",pyroHost.getText().trim());
+            callbacks.saveExtensionSetting("pyroPort",pyroPort.getText().trim());
+            callbacks.saveExtensionSetting("burpyPath",burpyPath.getText().trim());
+
+            callbacks.saveExtensionSetting("enableProcessor",chckbxPro.isSelected()?"1":"0");
+            callbacks.saveExtensionSetting("enableAuto",chckbxAuto.isSelected()?"1":"0");
+            callbacks.saveExtensionSetting("enableAutoProxy",proxy_chckbxAuto.isSelected()?"1":"0");
+            List<DataEntry> all_data = table_model.getAllValue();
+            callbacks.saveExtensionSetting("matchReplaceTable",JsontoStr(all_data));
+        }catch (Exception e){
+            printException(e,"Exception saving settings");
+        }
+    }
 
 
-	@Override
-	public void actionPerformed(ActionEvent event) {
-		String command = event.getActionCommand();
-		if(command.equals("killServer") && serverStarted) {
-			thread_error_flag=false;
-			thread_stout_flag=false;
-			stdoutThread.interrupt();
-			stderrThread.interrupt();
+
+
+    @Override
+    public void actionPerformed(ActionEvent event) {
+        String command = event.getActionCommand();
+        if(command.equals("killServer") && serverStarted) {
+            thread_error_flag=false;
+            thread_stout_flag=false;
+            stdoutThread.interrupt();
+            stderrThread.interrupt();
 //			stdoutThread.stop();
 //			stderrThread.stop();
-			try {
+            try {
 //				pyroBurpyService.close("shutdown");
 //				pyroServerProcess.destroy();
-				pyroServerProcess.destroy();
-				pyroServerProcess.destroyForcibly();
-				pyroBurpyService.close();
-				serverStarted = false;
-				serverStatus.setText("");
+                pyroServerProcess.destroy();
+                pyroServerProcess.destroyForcibly();
+                pyroBurpyService.close();
+                serverStarted = false;
+                serverStatus.setText("");
 //				serverStatusButtons.setText("");
-				try {
-					documentServerStatus.insertString(0, "NOT running", redStyle);
+                try {
+                    documentServerStatus.insertString(0, "NOT running", redStyle);
 //					documentServerStatusButtons.insertString(0, "Server stopped", redStyle);
-				} catch (BadLocationException e) {
-					printException(e,"Exception setting labels");
-				}
-				printSuccessMessage("Pyro server shutted down");
+                } catch (BadLocationException e) {
+                    printException(e,"Exception setting labels");
+                }
+                printSuccessMessage("Pyro server shutted down");
 
-			} catch (final Exception e) {
-				printException(e,"Exception shutting down Pyro server");
-			}
-		} else if(command.equals("pythonPathSelectFile") && !serverStarted) {
-			JFileChooser chooser = new JFileChooser();
-			chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);//设置只能选择目录
-			int returnVal = chooser.showOpenDialog(BurpExtender.this);
-			if(returnVal == JFileChooser.APPROVE_OPTION) {
-				String selectPath =chooser.getSelectedFile().getPath() ;
-				pythonPath.setText(selectPath);
-				chooser.setVisible(false);
-			}
-		} else if(command.equals("burpyPathSelectFile") && !serverStarted) {
-			JFileChooser chooser = new JFileChooser();
-			// 创建一个文件过滤器，仅显示 .txt 文件
-			FileNameExtensionFilter pyFileFilter = new FileNameExtensionFilter("Python files", "py");
-			chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);//设置只能选择目录
-			chooser.addChoosableFileFilter(pyFileFilter);
-			int returnVal = chooser.showOpenDialog(BurpExtender.this);
-			if(returnVal == JFileChooser.APPROVE_OPTION) {
-				String selectPath =chooser.getSelectedFile().getPath() ;
-				burpyPath.setText(selectPath);
-				chooser.setVisible(false);
-			}
-		} else if(command.equals("startServer") && !serverStarted) {
+            } catch (final Exception e) {
+                printException(e,"Exception shutting down Pyro server");
+            }
+        } else if(command.equals("pythonPathSelectFile") && !serverStarted) {
+            JFileChooser chooser = new JFileChooser();
+            chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);//设置只能选择目录
+            int returnVal = chooser.showOpenDialog(BurpExtender.this);
+            if(returnVal == JFileChooser.APPROVE_OPTION) {
+                String selectPath =chooser.getSelectedFile().getPath() ;
+                pythonPath.setText(selectPath);
+                chooser.setVisible(false);
+            }
+        } else if(command.equals("burpyPathSelectFile") && !serverStarted) {
+            JFileChooser chooser = new JFileChooser();
+            // 创建一个文件过滤器，仅显示 .txt 文件
+            FileNameExtensionFilter pyFileFilter = new FileNameExtensionFilter("Python files", "py");
+            chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);//设置只能选择目录
+            chooser.addChoosableFileFilter(pyFileFilter);
+            int returnVal = chooser.showOpenDialog(BurpExtender.this);
+            if(returnVal == JFileChooser.APPROVE_OPTION) {
+                String selectPath =chooser.getSelectedFile().getPath() ;
+                burpyPath.setText(selectPath);
+                chooser.setVisible(false);
+            }
+        } else if(command.equals("startServer") && !serverStarted) {
 
-			File burpyFile = new File(burpyPath.getText().trim());
-			if (burpyFile.exists()) {
-				savePersistentSettings();
-				try {
-					launchPyroServer(pythonPath.getText().trim(), pythonScript);
-				} catch (final Exception e) {
-					printException(null, "Exception starting Pyro server");
-				}
-			}else {
-				printException(null,"Python File not found!");
+            File burpyFile = new File(burpyPath.getText().trim());
+            if (burpyFile.exists()) {
+                savePersistentSettings();
+                try {
+                    launchPyroServer(pythonPath.getText().trim(), pythonScript);
+                } catch (final Exception e) {
+                    printException(null, "Exception starting Pyro server");
+                }
+            }else {
+                printException(null,"Python File not found!");
 
-			}
+            }
 
-		} else if (burpyMethods.contains(command)) {
-			IHttpRequestResponse[] selectedItems = currentInvocation.getSelectedMessages();
-			byte selectedInvocationContext = currentInvocation.getInvocationContext();
+        } else if (burpyMethods.contains(command)) {
+            IHttpRequestResponse[] selectedItems = currentInvocation.getSelectedMessages();
+            byte selectedInvocationContext = currentInvocation.getInvocationContext();
 
-			try {
-				// pass directly the bytes of http
-				byte[] selectedRequestOrResponse;
-				if(selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST || selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST) {
-					selectedRequestOrResponse = selectedItems[0].getRequest();
-				} else {
-					selectedRequestOrResponse = selectedItems[0].getResponse();
-				}
-				String ret_str = (String) pyroBurpyService.call("invoke_method", command, helpers.base64Encode(selectedRequestOrResponse));
-				if(selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
-					selectedItems[0].setRequest(ret_str.getBytes());
-				} else {
+            try {
+                // pass directly the bytes of http
+                byte[] selectedRequestOrResponse;
+                if(selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST || selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST) {
+                    selectedRequestOrResponse = selectedItems[0].getRequest();
+                } else {
+                    selectedRequestOrResponse = selectedItems[0].getResponse();
+                }
+                String ret_str = (String) pyroBurpyService.call("invoke_method", command, helpers.base64Encode(selectedRequestOrResponse));
+                if(selectedInvocationContext == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST) {
+                    selectedItems[0].setRequest(ret_str.getBytes());
+                } else {
 
-					final String msg = ret_str.substring(ret_str.indexOf("\r\n\r\n")+4);
-					SwingUtilities.invokeLater(() -> MessageDialog.show("Burpy "+command, msg));
-				}
+                    final String msg = ret_str.substring(ret_str.indexOf("\r\n\r\n")+4);
+                    SwingUtilities.invokeLater(() -> MessageDialog.show("Burpy "+command, msg));
+                }
 
-			} catch (Exception e) {
+            } catch (Exception e) {
 
-				printException(e, "Exception with custom context application");
+                printException(e, "Exception with custom context application");
 
-			}
+            }
 
-		} else if(command.startsWith("reloadScript")){
-			if(serverStarted) {
-				thread_error_flag=false;
-				thread_stout_flag=false;
-				stdoutThread.interrupt();
-				stderrThread.interrupt();
+        } else if(command.startsWith("reloadScript")){
+            if(serverStarted) {
+                thread_error_flag=false;
+                thread_stout_flag=false;
+                stdoutThread.interrupt();
+                stderrThread.interrupt();
 //				stdoutThread.stop();
 //				stderrThread.stop();
 
-				try {
-					thread_error_flag=true;
-					thread_stout_flag=true;
-					pyroServerProcess.destroyForcibly();
-					pyroBurpyService.close();
-					serverStarted = false;
+                try {
+                    thread_error_flag=true;
+                    thread_stout_flag=true;
+                    pyroServerProcess.destroyForcibly();
+                    pyroBurpyService.close();
+                    serverStarted = false;
 
-					serverStatus.setText("");
-					try {
-						documentServerStatus.insertString(0, "NOT running", redStyle);
-					} catch (BadLocationException e) {
-						printException(e, "Exception setting labels");
-					}
-					printSuccessMessage("Pyro server shutted down");
-				} catch (final Exception e) {
-					printException(e, "Exception shutting down Pyro server");
-				}
-			}
-			try {
+                    serverStatus.setText("");
+                    try {
+                        documentServerStatus.insertString(0, "NOT running", redStyle);
+                    } catch (BadLocationException e) {
+                        printException(e, "Exception setting labels");
+                    }
+                    printSuccessMessage("Pyro server shutted down");
+                } catch (final Exception e) {
+                    printException(e, "Exception shutting down Pyro server");
+                }
+            }
+            try {
 
-				launchPyroServer(pythonPath.getText().trim(),pythonScript);
-				getMethods();
-			} catch (final Exception e) {
-				printException(null,"Exception starting Pyro server");
-			}
-		}
-	}
+                launchPyroServer(pythonPath.getText().trim(),pythonScript);
+                getMethods();
+            } catch (final Exception e) {
+                printException(null,"Exception starting Pyro server");
+            }
+        }
+    }
 
-	@Override
-	public List<JMenuItem> createMenuItems(IContextMenuInvocation invocation) {
-			currentInvocation = invocation;
-			List<JMenuItem> menu = new ArrayList<>();
-			this.burpyMethods.forEach(method_name -> {
-				JMenuItem item = new JMenuItem("Burpy " + method_name);
-				item.setActionCommand(method_name);
-				item.addActionListener(this);
-				menu.add(item);
-			});
+    @Override
+    public List<JMenuItem> createMenuItems(IContextMenuInvocation invocation) {
+        currentInvocation = invocation;
+        List<JMenuItem> menu = new ArrayList<>();
+        this.burpyMethods.forEach(method_name -> {
+            JMenuItem item = new JMenuItem("Burpy " + method_name);
+            item.setActionCommand(method_name);
+            item.addActionListener(this);
+            menu.add(item);
+        });
 
-			return menu;
+        return menu;
 
-	}
+    }
 
 //	static String byteArrayToHexString(byte[] raw) {
 //		StringBuilder sb = new StringBuilder(2 + raw.length * 2);
@@ -926,7 +941,7 @@ public class BurpExtender extends Component implements IBurpExtender, ITab, Acti
 //		return sb.toString();
 //	}
 
-//	private static byte[] hexStringToByteArray(String hex) {
+    //	private static byte[] hexStringToByteArray(String hex) {
 //		byte[] b = new byte[hex.length() / 2];
 //		for (int i = 0; i < b.length; i++){
 //			int index = i * 2;
@@ -949,30 +964,30 @@ public class BurpExtender extends Component implements IBurpExtender, ITab, Acti
 //		return sb.toString().trim();
 //
 //	}
-	@Override
-	public void mouseClicked(MouseEvent e) {
+    @Override
+    public void mouseClicked(MouseEvent e) {
 
-	}
-	@Override
-	public void mousePressed(MouseEvent e) {
+    }
+    @Override
+    public void mousePressed(MouseEvent e) {
 
-	}
+    }
 
-	@Override
-	public void mouseReleased(MouseEvent e) {
+    @Override
+    public void mouseReleased(MouseEvent e) {
 
-	}
+    }
 
-	@Override
-	public void mouseEntered(MouseEvent e) {
-	}
+    @Override
+    public void mouseEntered(MouseEvent e) {
+    }
 
-	@Override
-	public void mouseExited(MouseEvent e) {
-	}
+    @Override
+    public void mouseExited(MouseEvent e) {
+    }
 
-	public static void printSuccessMessage(final String message) {
-		SwingUtilities.invokeLater(() -> {
+    public static void printSuccessMessage(final String message) {
+        SwingUtilities.invokeLater(() -> {
 
             String oldConsoleText = pluginConsoleTextArea.getText();
 
@@ -994,17 +1009,17 @@ public class BurpExtender extends Component implements IBurpExtender, ITab, Acti
             lastPrintIsJS = false;
         });
 
-	}
-	public static void printDebugMessage(final String message) {
-		if(!is_debug){
-			return;
-		}
-		stdout.println(message);
-	}
+    }
+    public static void printDebugMessage(final String message) {
+        if(!is_debug){
+            return;
+        }
+        stdout.println(message);
+    }
 
-	public void printJSMessage(final String message) {
+    public void printJSMessage(final String message) {
 
-		SwingUtilities.invokeLater(() -> {
+        SwingUtilities.invokeLater(() -> {
             String oldConsoleText = pluginConsoleTextArea.getText();
             Pattern p = Pattern.compile("^.*<body>(.*)</body>.*$", Pattern.DOTALL);
             Matcher m = p.matcher(oldConsoleText);
@@ -1024,14 +1039,14 @@ public class BurpExtender extends Component implements IBurpExtender, ITab, Acti
             lastPrintIsJS = true;
         });
 
-	}
+    }
 
 
-	public static void printException(final Exception e, final String message) {
-		if(message==null || message.isEmpty()){
-			return;
-		}
-		SwingUtilities.invokeLater(() -> {
+    public static void printException(final Exception e, final String message) {
+        if(message==null || message.isEmpty()){
+            return;
+        }
+        SwingUtilities.invokeLater(() -> {
             String oldConsoleText = pluginConsoleTextArea.getText();
             Pattern p = Pattern.compile("^.*<body>(.*)</body>.*$", Pattern.DOTALL);
             Matcher m = p.matcher(oldConsoleText);
@@ -1052,300 +1067,300 @@ public class BurpExtender extends Component implements IBurpExtender, ITab, Acti
                 newConsoleText.append(e).append("<br/>");
                 //consoleText = consoleText + e.getMessage() + "<br/>";
                 StackTraceElement[] exceptionElements = e.getStackTrace();
-				for (StackTraceElement exceptionElement : exceptionElements) {
-					newConsoleText.append(exceptionElement.toString()).append("<br/>");
-				}
+                for (StackTraceElement exceptionElement : exceptionElements) {
+                    newConsoleText.append(exceptionElement.toString()).append("<br/>");
+                }
             }
             newConsoleText.append("</font><br/>");
             pluginConsoleTextArea.setText(newConsoleText.toString());
             lastPrintIsJS = false;
         });
 
-	}
+    }
 
 
-	@Override
-	public void extensionUnloaded() {
+    @Override
+    public void extensionUnloaded() {
 
-		if(serverStarted) {
-			thread_error_flag=false;
-			thread_stout_flag=false;
-			stdoutThread.interrupt();
-			stderrThread.interrupt();
+        if(serverStarted) {
+            thread_error_flag=false;
+            thread_stout_flag=false;
+            stdoutThread.interrupt();
+            stderrThread.interrupt();
 //			stdoutThread.stop();
 //			stderrThread.stop();
 
-			try {
+            try {
                 pyroBurpyService.call("shutdown");
-				pyroServerProcess.destroyForcibly();
-				pyroBurpyService.close();
+                pyroServerProcess.destroyForcibly();
+                pyroBurpyService.close();
 
-				printSuccessMessage("Pyro server shutted down");
+                printSuccessMessage("Pyro server shutted down");
 
-			} catch (final Exception e) {
+            } catch (final Exception e) {
 
-				printException(e,"Exception shutting down Pyro server");
+                printException(e,"Exception shutting down Pyro server");
 
-			}
-		}
+            }
+        }
 
-	}
+    }
 
-	@Override
-	public String getProcessorName()
-	{
-		return "Burpy processor";
-	}
+    @Override
+    public String getProcessorName()
+    {
+        return "Burpy processor";
+    }
 
-	@Override
-	public byte[] processPayload(byte[] currentPayload, byte[] originalPayload, byte[] baseValue)
-	{
-		byte[] ret = currentPayload;
-		if(should_pro){
+    @Override
+    public byte[] processPayload(byte[] currentPayload, byte[] originalPayload, byte[] baseValue)
+    {
+        byte[] ret = currentPayload;
+        if(should_pro){
 
-			try {
-				final String s = (String) (pyroBurpyService.call("invoke_method", "processor", new String(currentPayload)));
-				ret = s.getBytes();
-			} catch (Exception e) {
-				stderr.println(e);
-				StackTraceElement[] exceptionElements = e.getStackTrace();
+            try {
+                final String s = (String) (pyroBurpyService.call("invoke_method", "processor", new String(currentPayload)));
+                ret = s.getBytes();
+            } catch (Exception e) {
+                stderr.println(e);
+                StackTraceElement[] exceptionElements = e.getStackTrace();
                 for (StackTraceElement exceptionElement : exceptionElements) {
                     stderr.println(exceptionElement.toString());
                 }
-			}
-		}
+            }
+        }
 
-		return ret;
-	}
+        return ret;
+    }
 
 
-	@Override
-	public void processHttpMessage(int toolFlag, boolean messageIsRequest, IHttpRequestResponse messageInfo) {
-		String host =  messageInfo.getHttpService().getHost();
+    @Override
+    public void processHttpMessage(int toolFlag, boolean messageIsRequest, IHttpRequestResponse messageInfo) {
+        String host =  messageInfo.getHttpService().getHost();
 //		printDebugMessage(whitelist.toString());
-		if (!whitelist.contains(host) && !whitelist.contains("*")) {
-			printDebugMessage("Domain name mismatch:"+host);
-			return;
-		}
-		if(is_match_replace){
-			if(toolFlag == IBurpExtenderCallbacks.TOOL_PROXY && !is_match_replace_proxy){
-				return;
-			}
-			if(toolFlag == IBurpExtenderCallbacks.TOOL_REPEATER && !is_match_replace_repeater){
-				return;
-			}
-			if(toolFlag == IBurpExtenderCallbacks.TOOL_EXTENDER && !is_match_replace_other){
-				return;
-			}
-			String request_header;
-			String request_body;
-			String response_header;
-			String response_body;
-			if (messageIsRequest) {
-				byte[] rq=messageInfo.getRequest();
-				IRequestInfo analyzerq=helpers.analyzeRequest(rq);
-				int bodyOffset = analyzerq.getBodyOffset();
-				request_body = new String(messageInfo.getRequest()).substring(bodyOffset);
-				request_header=String.join("\r\n", analyzerq.getHeaders());
-				for (DataEntry data : table_model.getAllValue()) {
-					if (!data.enable) {
-						continue;
-					}
-
-					switch (data.item) {
-						case "Request header":
-							request_header = handleData(data,request_header);
-							continue;
-						case "Request body":
-							request_body =handleData(data, request_body);
-							continue;
-						default:
+        if (!whitelist.contains(host) && !whitelist.contains("*")) {
+            printDebugMessage("Domain name mismatch:"+host);
+            return;
+        }
+        if(is_match_replace){
+            if(toolFlag == IBurpExtenderCallbacks.TOOL_PROXY && !is_match_replace_proxy){
+                return;
+            }
+            if(toolFlag == IBurpExtenderCallbacks.TOOL_REPEATER && !is_match_replace_repeater){
+                return;
+            }
+            if(toolFlag == IBurpExtenderCallbacks.TOOL_EXTENDER && !is_match_replace_other){
+                return;
+            }
+            String request_header;
+            String request_body;
+            String response_header;
+            String response_body;
+            if (messageIsRequest) {
+                byte[] rq=messageInfo.getRequest();
+                IRequestInfo analyzerq=helpers.analyzeRequest(rq);
+                int bodyOffset = analyzerq.getBodyOffset();
+                request_body = new String(messageInfo.getRequest()).substring(bodyOffset);
+                request_header=String.join("\r\n", analyzerq.getHeaders());
+                for (DataEntry data : table_model.getAllValue()) {
+                    if (!data.enable) {
+                        continue;
                     }
-				}
-				List<String> request_header_list = Arrays.asList(request_header.split("\r\n|\n|\r"));
-				byte[] newRequest = helpers.buildHttpMessage(request_header_list, request_body.getBytes());
-				messageInfo.setRequest(newRequest);
-				printDebugMessage("Request:\n"+request_header+"\n\n"+request_body);
-			} else {
-				byte[] rp=messageInfo.getResponse();
-				IResponseInfo analyzeResponse=helpers.analyzeResponse(rp);
-				int bodyOffset = analyzeResponse.getBodyOffset();
-				response_body = new String(messageInfo.getResponse()).substring(bodyOffset);
-				response_header=String.join("\r\n", analyzeResponse.getHeaders());
 
-				for (DataEntry data : table_model.getAllValue()) {
-					if (!data.enable) {
-						continue;
-					}
-					switch (data.item) {
-						case "Response header":
-							response_header =handleData(data, response_header);
-							continue;
-						case "Response body":
-							response_body =handleData(data, response_body);
-							continue;
-						default:
+                    switch (data.item) {
+                        case "Request header":
+                            request_header = handleData(data,request_header);
+                            continue;
+                        case "Request body":
+                            request_body =handleData(data, request_body);
+                            continue;
+                        default:
                     }
-				}
-				List<String> response_header_list = Arrays.asList(response_header.split("\r\n|\n|\r"));
-				byte[] newResponse = helpers.buildHttpMessage(response_header_list, response_body.getBytes());
-				messageInfo.setResponse(newResponse);
-				printDebugMessage("Response:\n"+response_header+"\n\n"+response_body);
-			}
+                }
+                List<String> request_header_list = Arrays.asList(request_header.split("\r\n|\n|\r"));
+                byte[] newRequest = helpers.buildHttpMessage(request_header_list, request_body.getBytes());
+                messageInfo.setRequest(newRequest);
+                printDebugMessage("Request:\n"+request_header+"\n\n"+request_body);
+            } else {
+                byte[] rp=messageInfo.getResponse();
+                IResponseInfo analyzeResponse=helpers.analyzeResponse(rp);
+                int bodyOffset = analyzeResponse.getBodyOffset();
+                response_body = new String(messageInfo.getResponse()).substring(bodyOffset);
+                response_header=String.join("\r\n", analyzeResponse.getHeaders());
+
+                for (DataEntry data : table_model.getAllValue()) {
+                    if (!data.enable) {
+                        continue;
+                    }
+                    switch (data.item) {
+                        case "Response header":
+                            response_header =handleData(data, response_header);
+                            continue;
+                        case "Response body":
+                            response_body =handleData(data, response_body);
+                            continue;
+                        default:
+                    }
+                }
+                List<String> response_header_list = Arrays.asList(response_header.split("\r\n|\n|\r"));
+                byte[] newResponse = helpers.buildHttpMessage(response_header_list, response_body.getBytes());
+                messageInfo.setResponse(newResponse);
+                printDebugMessage("Response:\n"+response_header+"\n\n"+response_body);
+            }
 //			printException(null,"End Replace");
-		}
+        }
 //		printSuccessMessage(new String(messageInfo.getRequest()));
 //		printSuccessMessage(encodeHtml(new String(messageInfo.getResponse())));
-		List<String> headers;
-		if (should_auto) {
-			if(toolFlag == IBurpExtenderCallbacks.TOOL_PROXY){
-				if(!proxy_should_auto){
-					return;
-				}
-			}
+        List<String> headers;
+        if (should_auto) {
+            if(toolFlag == IBurpExtenderCallbacks.TOOL_PROXY){
+                if(!proxy_should_auto){
+                    return;
+                }
+            }
 //			if (toolFlag == IBurpExtenderCallbacks.TOOL_SCANNER ||
 //					toolFlag == IBurpExtenderCallbacks.TOOL_REPEATER ||
 //					toolFlag == IBurpExtenderCallbacks.TOOL_INTRUDER) {
-			if (messageIsRequest) {
+            if (messageIsRequest) {
 
-				byte[] request = messageInfo.getRequest();
+                byte[] request = messageInfo.getRequest();
 
-					String ret = "";
-					try {
-						ret = (String) pyroBurpyService.call("invoke_method", "encrypt", helpers.base64Encode(request));
-					} catch(Exception e) {
-						stderr.println(e);
-						StackTraceElement[] exceptionElements = e.getStackTrace();
-                        for (StackTraceElement exceptionElement : exceptionElements) {
-                            stderr.println(exceptionElement.toString());
-                        }
-					}
-
-					IRequestInfo nreqInfo = helpers.analyzeRequest(ret.getBytes());
-					headers = nreqInfo.getHeaders();
-					int nbodyOff = nreqInfo.getBodyOffset();
-					byte[] nbody = ret.substring(nbodyOff).getBytes();
-
-					byte[] newRequest = helpers.buildHttpMessage(headers, nbody); //
-
-					messageInfo.setRequest(newRequest);
-
-			}else {
-				byte[] response = messageInfo.getResponse();
-				String ret = "";
-				try {
-					ret = (String) pyroBurpyService.call("invoke_method", "decrypt", helpers.base64Encode(response));
-					stderr.println(ret);
-				} catch(Exception e) {
-					stderr.println(e);
-					StackTraceElement[] exceptionElements = e.getStackTrace();
+                String ret = "";
+                try {
+                    ret = (String) pyroBurpyService.call("invoke_method", "encrypt", helpers.base64Encode(request));
+                } catch(Exception e) {
+                    stderr.println(e);
+                    StackTraceElement[] exceptionElements = e.getStackTrace();
                     for (StackTraceElement exceptionElement : exceptionElements) {
                         stderr.println(exceptionElement.toString());
                     }
-				}
-				IResponseInfo nresInfo = helpers.analyzeResponse(ret.getBytes());
-				int nbodyOff = nresInfo.getBodyOffset();
-				byte[] nbody = ret.substring(nbodyOff).getBytes();
-				headers = nresInfo.getHeaders();
-				byte[] newResponse = helpers.buildHttpMessage(headers, nbody);
-				messageInfo.setResponse(newResponse);
-			}
-		}
-	}
+                }
 
-	@Override
-	public IMessageEditorTab createNewInstance(IMessageEditorController controller, boolean editable) {
-		return new iMessageEditorTab(controller, editable);
-	}
+                IRequestInfo nreqInfo = helpers.analyzeRequest(ret.getBytes());
+                headers = nreqInfo.getHeaders();
+                int nbodyOff = nreqInfo.getBodyOffset();
+                byte[] nbody = ret.substring(nbodyOff).getBytes();
 
-	public class iMessageEditorTab implements IMessageEditorTab {
-        private final ITextEditor iTextEditor = callbacks.createTextEditor();
-		private byte[] currentMessage;
-		public iMessageEditorTab(IMessageEditorController controller, boolean editable) {
+                byte[] newRequest = helpers.buildHttpMessage(headers, nbody); //
+
+                messageInfo.setRequest(newRequest);
+
+            }else {
+                byte[] response = messageInfo.getResponse();
+                String ret = "";
+                try {
+                    ret = (String) pyroBurpyService.call("invoke_method", "decrypt", helpers.base64Encode(response));
+                    stderr.println(ret);
+                } catch(Exception e) {
+                    stderr.println(e);
+                    StackTraceElement[] exceptionElements = e.getStackTrace();
+                    for (StackTraceElement exceptionElement : exceptionElements) {
+                        stderr.println(exceptionElement.toString());
+                    }
+                }
+                IResponseInfo nresInfo = helpers.analyzeResponse(ret.getBytes());
+                int nbodyOff = nresInfo.getBodyOffset();
+                byte[] nbody = ret.substring(nbodyOff).getBytes();
+                headers = nresInfo.getHeaders();
+                byte[] newResponse = helpers.buildHttpMessage(headers, nbody);
+                messageInfo.setResponse(newResponse);
+            }
         }
-		@Override
-		public String getTabCaption() {
-			return "BurpyTab";
-		}
-		@Override
-		public Component getUiComponent() {
-			return iTextEditor.getComponent();
-		}
+    }
 
-		@Override
-		public boolean isEnabled(byte[] content, boolean isRequest) {
-			return true;
-		}
+    @Override
+    public IMessageEditorTab createNewInstance(IMessageEditorController controller, boolean editable) {
+        return new iMessageEditorTab(controller, editable);
+    }
 
-		@Override
-		public void setMessage(byte[] content, boolean isRequest) {
-			String ret = "";
-			try {
-				ret = (String) pyroBurpyService.call("invoke_method", "decrypt", helpers.base64Encode(content));
-			} catch(Exception e) {
-				stderr.println(e);
-				StackTraceElement[] exceptionElements = e.getStackTrace();
+    public class iMessageEditorTab implements IMessageEditorTab {
+        private final ITextEditor iTextEditor = callbacks.createTextEditor();
+        private byte[] currentMessage;
+        public iMessageEditorTab(IMessageEditorController controller, boolean editable) {
+        }
+        @Override
+        public String getTabCaption() {
+            return "BurpyTab";
+        }
+        @Override
+        public Component getUiComponent() {
+            return iTextEditor.getComponent();
+        }
+
+        @Override
+        public boolean isEnabled(byte[] content, boolean isRequest) {
+            return true;
+        }
+
+        @Override
+        public void setMessage(byte[] content, boolean isRequest) {
+            String ret = "";
+            try {
+                ret = (String) pyroBurpyService.call("invoke_method", "decrypt", helpers.base64Encode(content));
+            } catch(Exception e) {
+                stderr.println(e);
+                StackTraceElement[] exceptionElements = e.getStackTrace();
                 for (StackTraceElement exceptionElement : exceptionElements) {
                     stderr.println(exceptionElement.toString());
                 }
-			}
-			iTextEditor.setText(ret.getBytes(StandardCharsets.UTF_8));
+            }
+            iTextEditor.setText(ret.getBytes(StandardCharsets.UTF_8));
 
-			currentMessage = ret.getBytes(StandardCharsets.UTF_8);
-		}
+            currentMessage = ret.getBytes(StandardCharsets.UTF_8);
+        }
 
-		@Override
-		public byte[] getMessage() {
-			if (iTextEditor.isTextModified()){
-				byte[] data = iTextEditor.getText();
-				String ret = "";
-				try {
-					ret = (String) pyroBurpyService.call("invoke_method", "encrypt", helpers.base64Encode(data));
-				} catch(Exception e) {
-					stderr.println(e);
-					StackTraceElement[] exceptionElements = e.getStackTrace();
+        @Override
+        public byte[] getMessage() {
+            if (iTextEditor.isTextModified()){
+                byte[] data = iTextEditor.getText();
+                String ret = "";
+                try {
+                    ret = (String) pyroBurpyService.call("invoke_method", "encrypt", helpers.base64Encode(data));
+                } catch(Exception e) {
+                    stderr.println(e);
+                    StackTraceElement[] exceptionElements = e.getStackTrace();
                     for (StackTraceElement exceptionElement : exceptionElements) {
                         stderr.println(exceptionElement.toString());
                     }
-				}
+                }
 
-				return ret.getBytes(StandardCharsets.UTF_8);
-			} else {
-				return currentMessage;
-			}
-		}
+                return ret.getBytes(StandardCharsets.UTF_8);
+            } else {
+                return currentMessage;
+            }
+        }
 
-		@Override
-		public boolean isModified() {
-			return iTextEditor.isTextModified();
-		}
+        @Override
+        public boolean isModified() {
+            return iTextEditor.isTextModified();
+        }
 
-		@Override
-		public byte[] getSelectedData() {
-			return iTextEditor.getSelectedText();
-		}
-	}
+        @Override
+        public byte[] getSelectedData() {
+            return iTextEditor.getSelectedText();
+        }
+    }
 
-	public static void main(String[] args) throws PyroException {
-		// for testing purpose
-		System.out.println("Initializing service");
+    public static void main(String[] args) throws PyroException {
+        // for testing purpose
+        System.out.println("Initializing service");
 //		NameServerProxy ns = NameServerProxy.locateNS(null);
-		PyroProxy service = null;
-		try {
-			service = new PyroProxy("127.0.0.1", 10999, "BurpyServicePyro");
-		}catch (PyroException | IOException e) {
-			e.printStackTrace();
-		}
+        PyroProxy service = null;
+        try {
+            service = new PyroProxy("127.0.0.1", 10999, "BurpyServicePyro");
+        }catch (PyroException | IOException e) {
+            e.printStackTrace();
+        }
         System.out.println("Getting methods");
-		try {
-			Object methods_obj = service.call("get_methods");
-			System.out.println(methods_obj.toString());
-		}catch (PyroException e) {
-			System.out.println("PyroException");
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
+        try {
+            Object methods_obj = service.call("get_methods");
+            System.out.println(methods_obj.toString());
+        }catch (PyroException e) {
+            System.out.println("PyroException");
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }
 
